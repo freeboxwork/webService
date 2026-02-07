@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 번호 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 30px 0 10px;
+            text-align: center;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls label {
+            font-size: 0.95rem;
+            color: #ccc;
+        }
+
+        .controls select {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .controls select:hover {
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        .controls select option {
+            background: #302b63;
+            color: #fff;
+        }
+
+        .generate-btn {
+            padding: 14px 48px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(247, 151, 30, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(247, 151, 30, 0.6);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .results-container {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .result-set {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            backdrop-filter: blur(10px);
+        }
+
+        .result-set-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .result-set-label {
+            font-size: 0.85rem;
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-set-date {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .balls-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .ball {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            position: relative;
+            animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            opacity: 0;
+            transform: scale(0);
+            box-shadow: inset 0 -4px 8px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .ball::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 12px;
+            width: 16px;
+            height: 8px;
+            background: rgba(255,255,255,0.35);
+            border-radius: 50%;
+            transform: rotate(-20deg);
+        }
+
+        /* 로또 공 색상 - 한국 로또 공식 색상 */
+        .ball-yellow { background: linear-gradient(145deg, #ffc107, #e6a800); }
+        .ball-blue   { background: linear-gradient(145deg, #2196F3, #1565C0); }
+        .ball-red    { background: linear-gradient(145deg, #f44336, #c62828); }
+        .ball-gray   { background: linear-gradient(145deg, #9e9e9e, #616161); }
+        .ball-green  { background: linear-gradient(145deg, #4caf50, #2e7d32); }
+
+        .plus-sign {
+            font-size: 1.5rem;
+            color: #666;
+            font-weight: 300;
+            margin: 0 4px;
+        }
+
+        .bonus-label {
+            font-size: 0.7rem;
+            color: #999;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .bonus-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .history-section {
+            width: 100%;
+            max-width: 700px;
+            margin-top: 40px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .history-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ddd;
+        }
+
+        .clear-btn {
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: rgba(244, 67, 54, 0.15);
+            border-color: rgba(244, 67, 54, 0.4);
+            color: #f44336;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        /* 통계 섹션 */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 12px 20px;
+            min-width: 100px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 옵션 토글 */
+        .options-panel {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.15);
+            border-radius: 24px;
+            transition: background 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+        }
+
+        .toggle input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        .toggle-label {
+            font-size: 0.9rem;
+            color: #bbb;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 30px 0 10px;
+            text-align: center;
+            color: #444;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.8rem; }
+            .ball {
+                width: 46px;
+                height: 46px;
+                font-size: 1.1rem;
+            }
+            .result-set { padding: 14px 16px; }
+            .generate-btn { padding: 12px 36px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>LOTTO 번호 생성기</h1>
+    <p class="subtitle">행운의 번호를 뽑아보세요!</p>
+
+    <div class="options-panel">
+        <div class="option-row">
+            <div class="controls">
+                <label for="setCount">생성 게임 수</label>
+                <select id="setCount">
+                    <option value="1">1 게임</option>
+                    <option value="3">3 게임</option>
+                    <option value="5" selected>5 게임</option>
+                    <option value="10">10 게임</option>
+                </select>
+            </div>
+            <div class="toggle-container">
+                <label class="toggle">
+                    <input type="checkbox" id="bonusToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">보너스 번호</span>
+            </div>
+        </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generateLotto()">번호 생성</button>
+
+    <div class="stats-bar" id="statsBar" style="display:none;">
+        <div class="stat-item">
+            <div class="stat-value" id="totalGenerated">0</div>
+            <div class="stat-label">총 생성</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="mostFrequent">-</div>
+            <div class="stat-label">최다 번호</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="leastFrequent">-</div>
+            <div class="stat-label">최소 번호</div>
+        </div>
+    </div>
+
+    <div class="results-container" id="results"></div>
+
+    <div class="history-section" id="historySection" style="display:none;">
+        <div class="history-header">
+            <span class="history-title">이전 생성 기록</span>
+            <button class="clear-btn" onclick="clearHistory()">기록 삭제</button>
+        </div>
+        <div id="historyContainer"></div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+        <div class="icon">&#127922;</div>
+        <p>위 버튼을 눌러 로또 번호를 생성하세요</p>
+    </div>
+
+    <footer>
+        &copy; 2026 Lotto Generator &mdash; 본 번호는 무작위로 생성되며 당첨을 보장하지 않습니다.
+    </footer>
+
+    <script>
+        let allHistory = [];
+        let frequency = {};
+        let totalSets = 0;
+
+        function getRandomNumbers(count, max, exclude = []) {
+            const numbers = new Set();
+            while (numbers.size < count) {
+                const num = Math.floor(Math.random() * max) + 1;
+                if (!exclude.includes(num)) {
+                    numbers.add(num);
+                }
+            }
+            return Array.from(numbers).sort((a, b) => a - b);
+        }
+
+        function getBallColorClass(num) {
+            if (num <= 10) return 'ball-yellow';
+            if (num <= 20) return 'ball-blue';
+            if (num <= 30) return 'ball-red';
+            if (num <= 40) return 'ball-gray';
+            return 'ball-green';
+        }
+
+        function createBallHTML(num, delay) {
+            const colorClass = getBallColorClass(num);
+            return `<div class="ball ${colorClass}" style="animation-delay: ${delay}ms">${num}</div>`;
+        }
+
+        function createSetHTML(numbers, bonus, index, label, dateStr) {
+            const showBonus = document.getElementById('bonusToggle').checked;
+            let ballsHTML = numbers.map((n, i) =>
+                createBallHTML(n, i * 80 + index * 100)
+            ).join('');
+
+            if (showBonus && bonus !== null) {
+                ballsHTML += `<span class="plus-sign">+</span>`;
+                ballsHTML += `<div class="bonus-wrapper">
+                    ${createBallHTML(bonus, 6 * 80 + index * 100)}
+                    <span class="bonus-label">보너스</span>
+                </div>`;
+            }
+
+            return `
+                <div class="result-set" style="animation-delay: ${index * 120}ms">
+                    <div class="result-set-header">
+                        <span class="result-set-label">${label}</span>
+                        <span class="result-set-date">${dateStr}</span>
+                    </div>
+                    <div class="balls-container">${ballsHTML}</div>
+                </div>
+            `;
+        }
+
+        function generateLotto() {
+            const count = parseInt(document.getElementById('setCount').value);
+            const showBonus = document.getElementById('bonusToggle').checked;
+            const resultsEl = document.getElementById('results');
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            // 버튼 애니메이션
+            const btn = document.getElementById('generateBtn');
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => btn.style.transform = '', 150);
+
+            let html = '';
+            const currentBatch = [];
+
+            for (let i = 0; i < count; i++) {
+                const numbers = getRandomNumbers(6, 45);
+                const bonus = showBonus ? getRandomNumbers(1, 45, numbers)[0] : null;
+
+                currentBatch.push({ numbers, bonus, date: dateStr });
+
+                // 통계 업데이트
+                numbers.forEach(n => {
+                    frequency[n] = (frequency[n] || 0) + 1;
+                });
+                if (bonus) {
+                    frequency[bonus] = (frequency[bonus] || 0) + 1;
+                }
+
+                const label = `게임 ${String.fromCharCode(65 + i)}`;
+                html += createSetHTML(numbers, bonus, i, label, dateStr);
+            }
+
+            resultsEl.innerHTML = html;
+            totalSets += count;
+
+            // 이전 기록으로 이동
+            if (allHistory.length > 0) {
+                document.getElementById('historySection').style.display = 'block';
+            }
+
+            // 현재 배치를 히스토리에 추가
+            allHistory.unshift(...currentBatch);
+
+            // 히스토리 업데이트 (이전 배치만)
+            updateHistoryDisplay(count);
+
+            // 통계 업데이트
+            updateStats();
+
+            // 빈 상태 숨기기
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        function updateHistoryDisplay(skipCount) {
+            const container = document.getElementById('historyContainer');
+            const historyItems = allHistory.slice(skipCount); // 현재 결과 제외
+
+            if (historyItems.length === 0) {
+                document.getElementById('historySection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('historySection').style.display = 'block';
+
+            let html = '';
+            historyItems.forEach((item, i) => {
+                const label = `기록 #${historyItems.length - i}`;
+                // 히스토리 항목은 애니메이션 없이
+                const showBonus = item.bonus !== null;
+                let ballsHTML = item.numbers.map(n => {
+                    const colorClass = getBallColorClass(n);
+                    return `<div class="ball ${colorClass}" style="animation: none; opacity:1; transform:scale(1);">${n}</div>`;
+                }).join('');
+
+                if (showBonus) {
+                    ballsHTML += `<span class="plus-sign">+</span>`;
+                    ballsHTML += `<div class="bonus-wrapper">
+                        <div class="ball ${getBallColorClass(item.bonus)}" style="animation: none; opacity:1; transform:scale(1);">${item.bonus}</div>
+                        <span class="bonus-label">보너스</span>
+                    </div>`;
+                }
+
+                html += `
+                    <div class="result-set" style="animation: none; opacity: 0.7; transform: none;">
+                        <div class="result-set-header">
+                            <span class="result-set-label">${label}</span>
+                            <span class="result-set-date">${item.date}</span>
+                        </div>
+                        <div class="balls-container">${ballsHTML}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function updateStats() {
+            document.getElementById('statsBar').style.display = 'flex';
+            document.getElementById('totalGenerated').textContent = totalSets;
+
+            const entries = Object.entries(frequency);
+            if (entries.length > 0) {
+                entries.sort((a, b) => b[1] - a[1]);
+                document.getElementById('mostFrequent').textContent = entries[0][0];
+                document.getElementById('leastFrequent').textContent = entries[entries.length - 1][0];
+            }
+        }
+
+        function clearHistory() {
+            allHistory = [];
+            frequency = {};
+            totalSets = 0;
+            document.getElementById('historyContainer').innerHTML = '';
+            document.getElementById('historySection').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('statsBar').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        // 키보드 단축키 (스페이스바로 생성)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target === document.body) {
+                e.preventDefault();
+                generateLotto();
+            }
+        });
+    </script>
+</body>
+</html>
